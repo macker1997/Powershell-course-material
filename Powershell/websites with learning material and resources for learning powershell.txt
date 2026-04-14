@@ -1,0 +1,9 @@
+https://ss64.com/
+
+https://devops-collective-inc.gitbook.io/the-big-book-of-powershell-gotchas
+
+https://www.educative.io/answers/what-are-powershell-comparison-operators
+
+https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_format.ps1xml?view=powershell-7.6&viewFallbackFrom=powershell-7.3
+
+https://powershellexplained.com/2016-08-28-PowerShell-variables-to-remote-commands/

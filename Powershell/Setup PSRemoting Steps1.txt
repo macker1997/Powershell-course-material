@@ -1,0 +1,142 @@
+Setup DC and client:
+
+DC First:
+ 1. Create a vm with server iso/template
+ 2. Make sure virtual nic is on proper vswitch.
+ 3. Add cut and paste items to VM-Options->Advanced->Edit Configuration
+ 4. During setup Adminstration user.  Password01
+ 5. Rename machine. Named: PS-DC-XXX-01
+ 6. Set time and timezone
+ 7. Static IP make sure dns is: 127.0.0.1     We used .10 for Static IP
+ 8. Restart VM. 
+
+ 9. Clone this VM for our Future Member Server  Named: PS-MS-XXX-01
+
+10. Install AD DS 
+11. Promte to Domain Controller
+    a) New forest and supply domian name
+    b) Add Domain Administrator password 
+	c) Reboot
+	
+12. a) Create a new user using AD Computers and Users.  NetAdmin:Password01!
+    b) Member of: Administrators, Domain Admin, Remote Management User
+
+12. Add ping rule - Advanced firewall settings
+13. Install VMware tools
+14. Enable RDP
+15. Install PS 7.5, Chrome, Bginfo - currently avialable toolsv2 on cd drive
+16. VM Snapshot
+
+
+Client Setup Win11:
+ 1. Create a vm with client iso/templete
+ 2. Make sure virtual nic is on proper vswitch.
+ 3. Add cut and paste items to VM-Options->Advanced->Edit Configuration
+ 4. During setup user.  StuAdmin:Password01
+ 5. Name/Rename machine. PS-Win11-XXX-01
+ 6. Set time and timezone
+ 7. Static IP make sure dns is pointed to DC     We used .100 for Static or dhcp using vyos
+ 8. Add ping rule - Advanced firewall settings
+ 9. Install VMware tools
+10. Enable RDP
+11. Install PS 7.5, Chrome, Bginfo - currently avialable toolsv2 on cd drive
+12. Add User to Member of: Remote Management User
+12. Restart VM. 
+13. VM Snapshot
+
+
+Join Client to DC
+ 1. Login
+ 2. Ping check via IP, DC computername
+ 3. Join to DC 
+ 4. ipconfig /registerdns
+ 5. nslookup to confirm
+ 6. Restart
+ 7. Login with Domain credentials: domain\stuadmin 
+
+
+Add PSRemoting Client:
+ in Administrator mode   
+ 1. Enable-PSRemoting 
+ 2. Get-ExecutionPolicy -> make sure RemoteSigned
+	a) Get-ExecutionPolicy | Set-ExecutionPolicy RemoteSigned
+
+ 2. Get-NetAdapter | Get-NetConnectionProfile  
+     -> Make sure not Public, Must be DomainAuthenticated or Private
+     a) Get-netAdapter | Set-NetconnectionProfile –networkCategory Private
+	 
+ 3. Set-Item WSMan:\Local\Client\TrustedHosts "ip of DC1,*.domain.local"
+ 
+ 
+Add PSRemoting DC:
+ PowerShell Administrator mode   
+ 1. Enable-PSRemoting 
+ 2. Get-ExecutionPolicy -> make sure RemoteSigned
+	a) Get-ExecutionPolicy | Set-ExecutionPolicy RemoteSigned
+
+ 2. Get-NetAdapter | Get-NetConnectionProfile  
+     -> Make sure not Public, Must be DomainAuthenticated or Private
+     a) Get-netAdapter | Set-NetconnectionProfile –networkCategory Private
+	 
+ 3. Set-Item WSMan:\Local\Client\TrustedHosts "ip of Client,*.domain.local"
+ 
+Test PS-Remote connection from DC to Client:
+
+1. Enter-PSSession -ComputerName ClientIP  -Credentials domain\stuadmin
+2. Enter-PSSession -ComputerName ClientIP  -Credentials .\stuadmin 
+3. Enter-PSSession -ComputerName clientcompyname
+4. Enter-PSSession -ComputerName clientcompyname  -Credentials domain\stuadmin
+ 
+Test PS-Remote connection from Client to DC:
+
+1. Enter-PSSession -ComputerName DC-IP  -Credentials domain\stuadmin
+2. Enter-PSSession -ComputerName DCcompyname
+3. Enter-PSSession -ComputerName DCcompyname  -Credentials domain\stuadmin
+4. Enter-PSSession -ComputerName 10.0.1.1 -Credential (Get-Credential -UserName pwrshell\stuadmin -Message "Gimme the password")
+
+Snapshot both DC and Client label: Joined 
+
+Setup second Member Server and add to Domain:
+ 1. Boot the PS-MS-XXX-01
+ 2. run sysprep  generalize. reboot machine
+ 3. Change name 
+ 4. During setup Adminstration user.  Password01
+ 5. Rename machine.
+ 6. Set time and timezone
+ 7. Static IP make sure dns is: DC1-IP or 127.0.0.1 (depends on use)  We used .15 for Static
+ 8. Restart VM. 
+ 9. Add ping rule - Advanced firewall settings
+10. Install VMware tools
+11. Enable RDP
+12. Install PS 7.5, Chrome, Bginfo - currently avialable toolsv2 on cd drive
+13. VM Snapshot
+
+14. Install AD DS 
+15. Promte to Domain Controller
+    a) Add to existing forest and supply domain name and password 
+    b) Reboot
+
+16. Add PSRemoting DC2:
+ PowerShell Administrator mode   
+ A) Enable-PSRemoting 
+ B) Get-ExecutionPolicy -> make sure RemoteSigned
+	1.) Get-ExecutionPolicy | Set-ExecutionPolicy RemoteSigned
+
+ C) Get-NetAdapter | Get-NetConnectionProfile  0
+     -> Make sure not Public, Must be DomainAuthenticated or Private
+     1.) Get-netAdapter | Set-NetconnectionProfile –networkCategory Private
+	 
+ D) Set-Item WSMan:\Local\Client\TrustedHosts "ip of Client,ip of DC1, *.domain.local"
+
+
+
+Add PSRemoting Update to Client:
+
+Set-Item WSMan:\Local\Client\TrustedHosts "ip of DC2" -Concatenate
+
+Clear-Item WSMan:\Localhost\Client\TrustedHosts 
+Set-Item WSMan:\Localhost\Client\TrustedHosts "10.0.0.15, 10.0.0.10, *.pwrshell.local" 
+
+Add PSRemoting Update to DC1:
+Clear-Item WSMan:\Localhost\Client\TrustedHosts 
+Set-Item WSMan:\Localhost\Client\TrustedHosts "10.0.0.15, 10.0.0.100, *.pwrshell.local" 
